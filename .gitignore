@@ -1,0 +1,9 @@
+.build/
+build/
+.swiftpm/
+*.xcodeproj
+.DS_Store
+ROADMAP.md
+# 本地开发说明，不公开
+CLAUDE.md
+HANDOFF.md

@@ -1,0 +1,4 @@
+"CFBundleDisplayName" = "ICT";
+"NSMicrophoneUsageDescription" = "ICT 需要使用麦克风识别说话内容并生成实时字幕。";
+"NSAudioCaptureUsageDescription" = "ICT 需要录制系统正在播放的声音，为视频和会议生成实时字幕。";
+"NSSpeechRecognitionUsageDescription" = "ICT 使用系统本地语音识别将说话内容转换为文字。";

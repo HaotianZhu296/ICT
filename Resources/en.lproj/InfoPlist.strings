@@ -1,0 +1,4 @@
+"CFBundleDisplayName" = "ICT";
+"NSMicrophoneUsageDescription" = "ICT uses the microphone to recognize speech and show live subtitles.";
+"NSAudioCaptureUsageDescription" = "ICT records the audio your Mac is playing to show subtitles for videos and meetings.";
+"NSSpeechRecognitionUsageDescription" = "ICT uses on-device speech recognition to turn speech into text.";
