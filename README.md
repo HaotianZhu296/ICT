@@ -149,7 +149,7 @@ $B --render-window out.png --hover                       # offscreen screenshot 
 
 ICT borrows ideas from these projects:
 
-- LiveSub by Yang Shuo (杨朔): the earlier live-subtitle app ICT was reworked from
+- LiveSub by Yang Shuo (杨朔): a macOS live bilingual subtitle app
 - [AirTranslate](https://github.com/himomohi/AirTranslate) (Apache-2.0): a SpeechAnalyzer-based macOS caption app
 - [LiveCaptions-Translator](https://github.com/SakiRinn/LiveCaptions-Translator) (Apache-2.0): the backup Google endpoint, context handling for machine translation, a latest-wins translation queue
 - [whisper_streaming](https://github.com/ufal/whisper_streaming) (MIT): LocalAgreement, committing a stable prefix early
