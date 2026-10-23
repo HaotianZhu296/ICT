@@ -145,17 +145,18 @@ $B --render-window out.png --hover                       # 字幕窗口离屏截
 
 ## 致谢
 
-- **杨朔（Yang Shuo）** 编写了 ICT 前身 LiveSub 的原始代码：采集与识别流水线、悬浮字幕、AI 助手和多模型支持。
-- 在改进断句、延迟和字幕界面时，我们研究了下面这些开源项目，并和自己的做法做了对比：
-  - [AirTranslate](https://github.com/himomohi/AirTranslate)（Apache-2.0）：基于 SpeechAnalyzer 的 macOS 字幕应用
-  - [LiveCaptions-Translator](https://github.com/SakiRinn/LiveCaptions-Translator)（Apache-2.0）：机器翻译的上下文处理、只保留最新结果的翻译队列
-  - [whisper_streaming](https://github.com/ufal/whisper_streaming)（MIT）：LocalAgreement，提前确认稳定的前缀
-  - [WhisperLiveKit](https://github.com/QuentinFuxa/WhisperLiveKit)（Apache-2.0）：区分已确认文字和缓冲文字
-  - [WhisperLive](https://github.com/collabora/WhisperLive)（MIT）：输出不再变化时确认
-  - [obs-localvocal](https://github.com/royshil/obs-localvocal)（GPL-2.0）：滚动字幕缓冲
-  - [my-translator](https://github.com/phuc-nt/my-translator)（MIT）：本地翻译的提示词设计
+ICT 参考和借鉴了下面这些项目的思路：
 
-  ICT 没有包含这些项目的代码。
-- Apple 的 Speech 与 Translation 框架、Google 翻译，以及 [Claude Code](https://claude.com/claude-code)。
+- 杨朔（Yang Shuo）的 LiveSub：ICT 在它的基础上重构而来
+- [AirTranslate](https://github.com/himomohi/AirTranslate)（Apache-2.0）：基于 SpeechAnalyzer 的 macOS 字幕应用
+- [LiveCaptions-Translator](https://github.com/SakiRinn/LiveCaptions-Translator)（Apache-2.0）：Google 备用接口、机器翻译的上下文处理、只保留最新结果的翻译队列
+- [whisper_streaming](https://github.com/ufal/whisper_streaming)（MIT）：LocalAgreement，提前确认稳定的前缀
+- [WhisperLiveKit](https://github.com/QuentinFuxa/WhisperLiveKit)（Apache-2.0）：区分已确认文字和缓冲文字
+- [WhisperLive](https://github.com/collabora/WhisperLive)（MIT）：输出不再变化时确认
+- [obs-localvocal](https://github.com/royshil/obs-localvocal)（GPL-2.0）：滚动字幕缓冲
+- [my-translator](https://github.com/phuc-nt/my-translator)（MIT）：本地翻译的提示词设计
+- [Easydict](https://github.com/tisfeng/Easydict)、[py-googletrans](https://github.com/ssut/py-googletrans)、[pot-desktop](https://github.com/pot-app/pot-desktop)：应对 Google 翻译限流的做法
+
+同时用到了 Apple 的 Speech 与 Translation 框架、Google 翻译，以及 [Claude Code](https://claude.com/claude-code)。
 
 ICT 是一个个人小项目，按现状分享。

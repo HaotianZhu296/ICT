@@ -147,17 +147,18 @@ $B --render-window out.png --hover                       # offscreen screenshot 
 
 ## Acknowledgments
 
-- **Yang Shuo (杨朔)** wrote the original LiveSub code that ICT grew out of: the capture and recognition pipeline, the subtitle overlay, the AI assistant and the multi-model support.
-- While improving segmentation, latency and the caption UI we studied these open-source projects and compared their approaches with ours:
-  - [AirTranslate](https://github.com/himomohi/AirTranslate) (Apache-2.0): a SpeechAnalyzer-based macOS caption app
-  - [LiveCaptions-Translator](https://github.com/SakiRinn/LiveCaptions-Translator) (Apache-2.0): context handling for machine translation and a latest-wins translation queue
-  - [whisper_streaming](https://github.com/ufal/whisper_streaming) (MIT): LocalAgreement, committing a stable prefix early
-  - [WhisperLiveKit](https://github.com/QuentinFuxa/WhisperLiveKit) (Apache-2.0): splitting committed and buffered text
-  - [WhisperLive](https://github.com/collabora/WhisperLive) (MIT): committing output that stops changing
-  - [obs-localvocal](https://github.com/royshil/obs-localvocal) (GPL-2.0): rolling caption buffer
-  - [my-translator](https://github.com/phuc-nt/my-translator) (MIT): prompt design for local translation
+ICT borrows ideas from these projects:
 
-  ICT does not include code from these projects.
-- Apple's Speech and Translation frameworks, Google Translate, and [Claude Code](https://claude.com/claude-code).
+- LiveSub by Yang Shuo (杨朔): the earlier live-subtitle app ICT was reworked from
+- [AirTranslate](https://github.com/himomohi/AirTranslate) (Apache-2.0): a SpeechAnalyzer-based macOS caption app
+- [LiveCaptions-Translator](https://github.com/SakiRinn/LiveCaptions-Translator) (Apache-2.0): the backup Google endpoint, context handling for machine translation, a latest-wins translation queue
+- [whisper_streaming](https://github.com/ufal/whisper_streaming) (MIT): LocalAgreement, committing a stable prefix early
+- [WhisperLiveKit](https://github.com/QuentinFuxa/WhisperLiveKit) (Apache-2.0): splitting committed and buffered text
+- [WhisperLive](https://github.com/collabora/WhisperLive) (MIT): committing output that stops changing
+- [obs-localvocal](https://github.com/royshil/obs-localvocal) (GPL-2.0): rolling caption buffer
+- [my-translator](https://github.com/phuc-nt/my-translator) (MIT): prompt design for local translation
+- [Easydict](https://github.com/tisfeng/Easydict), [py-googletrans](https://github.com/ssut/py-googletrans), [pot-desktop](https://github.com/pot-app/pot-desktop): handling Google Translate rate limits
+
+It also relies on Apple's Speech and Translation frameworks, Google Translate, and [Claude Code](https://claude.com/claude-code).
 
 ICT is a small personal project shared as-is.
