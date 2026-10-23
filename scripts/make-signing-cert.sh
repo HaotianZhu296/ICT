@@ -30,7 +30,10 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -config "$TMP/cert.cnf" \
   -keyout "$TMP/key.pem" -out "$TMP/cert.pem" 2>/dev/null
 # 只用于这次导入的临时口令。
 PASS=$(openssl rand -hex 16)
+# 指定旧算法：OpenSSL 3（例如 Homebrew、conda 里的）默认的加密方式 macOS 的 security 读不了
+# （“MAC verification failed”）；系统自带的 LibreSSL 也认这几个参数。
 openssl pkcs12 -export -inkey "$TMP/key.pem" -in "$TMP/cert.pem" -name "$NAME" \
+  -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg sha1 \
   -out "$TMP/cert.p12" -passout "pass:$PASS"
 # -T 允许 codesign 直接使用私钥，签名时不弹窗。
 security import "$TMP/cert.p12" -k "$HOME/Library/Keychains/login.keychain-db" -P "$PASS" -T /usr/bin/codesign

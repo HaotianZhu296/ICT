@@ -30,7 +30,18 @@ It was built for sitting in a lecture with a strong-accented speaker and still f
 
 - Xcode Command Line Tools to build from source (`xcode-select --install`). The full Xcode is not needed.
 
-## Install (build from source)
+## Install
+
+### Download
+
+1. Download `ICT-<version>-macOS.dmg` from the [latest release](https://github.com/HaotianZhu296/ICT/releases/latest). It runs on both Apple silicon and Intel Macs.
+2. Open the dmg and drag **ICT** onto the **Applications** folder next to it.
+3. ICT isn't notarized by Apple (that needs a paid developer account), so the first launch is blocked with "Apple could not verify…". Click **Done**, open **System Settings › Privacy & Security**, scroll down to "ICT was blocked…" and click **Open Anyway**, then enter your password. After that ICT opens normally.
+
+When you update, replace the app in Applications and click **Open Anyway** once more. Microphone and system-audio permissions are kept.
+
+### Build from source
+
 
 ```bash
 git clone https://github.com/HaotianZhu296/ICT.git

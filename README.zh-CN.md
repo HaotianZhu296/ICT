@@ -30,7 +30,18 @@ ICT 是一个 macOS 小工具：实时监听**麦克风**（讲座、会议、�
 
 - 从源码构建需要 Xcode 命令行工具（`xcode-select --install`），不需要完整的 Xcode。
 
-## 安装（从源码构建）
+## 安装
+
+### 下载安装
+
+1. 在[最新版本](https://github.com/HaotianZhu296/ICT/releases/latest)页面下载 `ICT-版本号-macOS.dmg`。Apple 芯片和 Intel 芯片的 Mac 都能用。
+2. 打开 dmg，把 **ICT** 拖到旁边的“应用程序”文件夹上。
+3. ICT 没有经过 Apple 公证（公证需要付费的开发者账号），第一次打开会提示“Apple 无法验证……”。点“完成”，打开 **系统设置 › 隐私与安全性**，在页面下方找到“已阻止打开‘ICT’”，点 **仍要打开**，输入电脑密码。之后就能正常打开。
+
+更新时用新版替换“应用程序”里的旧版，再点一次“仍要打开”。麦克风和系统录音权限会保留。
+
+### 从源码构建
+
 
 ```bash
 git clone https://github.com/HaotianZhu296/ICT.git
