@@ -118,10 +118,10 @@ extension SubtitleController {
         if !segments.isEmpty { runWorker() }
     }
 
-    /// Google、Apple 每句独立翻译，同时翻几句，后一句不用等前一句（2026-10-22 实测排队要多等 1 秒多）；
-    /// 大模型会话带着上下文，要按顺序一句一句来。
+    /// Google、Apple 每句独立翻译，同时翻两句，后一句不用等前一句（2026-10-22 实测排队要多等 1 秒多）；
+    /// 不多于两句，免得一下子发太多请求被 Google 限流。大模型会话带着上下文，要按顺序一句一句来。
     func runWorker() {
-        let limit = basicTranslator != nil && translator === basicTranslator ? 3 : 1
+        let limit = basicTranslator != nil && translator === basicTranslator ? 2 : 1
         while activeTranslations < limit, let id = dequeueMerged() {
             activeTranslations += 1
             Task {

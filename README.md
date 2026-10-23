@@ -77,7 +77,7 @@ ICT has no menu bar or Dock icon; everything is on the subtitle window. Hover ov
 | Cloud | Claude Code, or your own API key | ✓ |
 | Local | Ollama or LM Studio running on your Mac | Depends on the model |
 
-Google Translate uses the unofficial free web endpoint: it needs no key but has no guarantees and may rate-limit heavy use. If it fails and the Apple language pack is installed, ICT falls back to Apple Translation.
+Google Translate uses Google's unofficial free web endpoints: no key is needed, but there are no guarantees and Google rate-limits bursts of requests (HTTP 429). ICT uses two endpoints (the `gtx` endpoint and the one Chrome's dictionary extension uses). When one is limited it switches to the other and rests the limited one for a minute. If both fail it waits 1–4 s and tries once more. If that also fails and the Apple language pack is installed, ICT falls back to Apple Translation. At most two sentences are translated at once.
 
 To add your own API or a local model: Settings › Translation › Model Services › **Manage…** → **Add Model Service**. Templates are included for Anthropic, OpenAI, DeepSeek, Qwen (DashScope), Gemini, OpenRouter, Ollama and LM Studio. API keys are stored in the macOS Keychain.
 
