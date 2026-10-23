@@ -147,7 +147,7 @@ $B --render-window out.png --hover                       # 字幕窗口离屏截
 
 ICT 参考和借鉴了下面这些项目的思路：
 
-- 杨朔（Yang Shuo）的 LiveSub：macOS 实时双语字幕应用
+- [LiveSub](https://github.com/ShuoYang-cs/LiveSub)：macOS 实时双语字幕应用
 - [AirTranslate](https://github.com/himomohi/AirTranslate)（Apache-2.0）：基于 SpeechAnalyzer 的 macOS 字幕应用
 - [LiveCaptions-Translator](https://github.com/SakiRinn/LiveCaptions-Translator)（Apache-2.0）：Google 备用接口、机器翻译的上下文处理、只保留最新结果的翻译队列
 - [whisper_streaming](https://github.com/ufal/whisper_streaming)（MIT）：LocalAgreement，提前确认稳定的前缀
