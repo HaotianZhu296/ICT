@@ -59,17 +59,24 @@ extension SubtitleController {
     var correcting: Bool { settings.autoCorrect && recognitionDifficult && correctionModel != nil }
 
     func updateQuality(_ confidences: [Double]) {
-        guard quality.add(confidences) else { return }
-        recognitionDifficult = quality.isDifficult
+        // ICT_DEBUG_DIFFICULT=1：一直当成识别困难（测试纠错）。
+        let forced = ProcessInfo.processInfo.environment["ICT_DEBUG_DIFFICULT"] != nil
+        guard quality.add(confidences) || (forced && !recognitionDifficult) else { return }
+        recognitionDifficult = forced || quality.isDifficult
         let average = quality.averageConfidence.map { String(format: "%.2f", $0) } ?? "-"
         appLog.notice("recognition \(self.recognitionDifficult ? "difficult" : "clear", privacy: .public) (avg confidence \(average, privacy: .public))")
         // 没打开自动纠正时只在状态条上提示，不换翻译进程。
         guard settings.autoCorrect, let model = correctionModel, !usingFallback, translator != nil else { return }
-        // Google、Apple：识别清楚了换回原来的翻译器（它一直留着，不关）。
-        if let basic = basicTranslator, !correcting {
-            if translator !== basic { retire(translator) }
-            translator = basic
-            translatorBuiltDifficult = false
+        // Google、Apple：翻译器不换，识别困难时另开一个只纠正原文的会话，清楚了关掉。
+        if basicTranslator != nil {
+            if correcting, corrector == nil {
+                do { corrector = try makeCorrector(model) } catch {
+                    appLog.error("start corrector failed: \(error.localizedDescription, privacy: .public)")
+                }
+            } else if !correcting, let old = corrector {
+                retire(old)
+                corrector = nil
+            }
             return
         }
         // 换一个带/不带“按发音纠正”的翻译进程：新的建好后立刻替换，中间不留空档。

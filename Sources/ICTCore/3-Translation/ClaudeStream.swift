@@ -50,6 +50,17 @@ public enum ClaudeStream {
         }
     }
 
+    /// 排查 token 用量（`ICT_DEBUG_USAGE`）：一轮结束（result 事件）时的用量，其他行为 nil。
+    public static func usage(line: String) -> String? {
+        guard let data = line.data(using: .utf8),
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              obj["type"] as? String == "result", let usage = obj["usage"] as? [String: Any]
+        else { return nil }
+        func n(_ key: String) -> Int { usage[key] as? Int ?? 0 }
+        let cost = obj["total_cost_usd"] as? Double ?? 0
+        return "in \(n("input_tokens")) cache_write \(n("cache_creation_input_tokens")) cache_read \(n("cache_read_input_tokens")) out \(n("output_tokens")) total_cost $\(String(format: "%.4f", cost))"
+    }
+
     /// 一条 stream-json 输入消息（一行 JSON）。
     public static func userMessageLine(_ text: String) -> String {
         let payload: [String: Any] = [

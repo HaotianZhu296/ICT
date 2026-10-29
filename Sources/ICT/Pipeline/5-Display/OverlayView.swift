@@ -321,9 +321,9 @@ struct OverlayView: View {
         if controller.usingFallback {
             return basic ? settings.displayName(settings.translationModel) : L("Apple 本地翻译 · 备用")
         }
-        // Google、Apple 在纠正期间实际用的是 Claude。
+        // Google、Apple 在识别困难期间另有一个大模型纠正原文。
         if basic, controller.correcting, let model = controller.correctionModel {
-            return L("%@ · 纠正中", settings.displayName(model))
+            return L("%@ · %@ 纠正", settings.displayName(settings.translationModel), settings.displayName(model))
         }
         return settings.displayName(settings.translationModel)
     }

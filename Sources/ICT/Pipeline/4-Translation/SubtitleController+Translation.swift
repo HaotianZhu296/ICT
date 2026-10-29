@@ -6,8 +6,10 @@ extension SubtitleController {
     func resetTranslators() {
         retire(translator)
         if basicTranslator !== translator { retire(basicTranslator) }
+        retire(corrector)
         translator = nil
         basicTranslator = nil
+        corrector = nil
         fallback = nil
         usingFallback = false
         translatorPending = true
@@ -45,10 +47,8 @@ extension SubtitleController {
         claudeAvailable = ClaudeCLI.locate(customPath: settings.claudePath) != nil
         if !settings.translationModel.isLanguageModel {
             prepareBasicTranslator(source: source, target: target)
-            // 改设置时正处在识别困难中：直接用带纠正的会话。
-            if correcting, let model = correctionModel, let session = try? makeModelSession(model) {
-                translator = session
-            }
+            // 改设置时正处在识别困难中：直接开纠错会话。
+            if correcting, let model = correctionModel { corrector = try? makeCorrector(model) }
             return
         }
         do {
@@ -84,7 +84,7 @@ extension SubtitleController {
     }
 
     /// 按发音纠正用的大模型：所选翻译模型是大模型就用它；Google、Apple 不能纠正，本机有 Claude Code 时
-    /// 临时换成 Claude Sonnet。实测（2026-10-22）带上下文时 Sonnet 和 Haiku 一样快，但 Haiku 会编造原文没有的词。
+    /// 另开一个 Claude Sonnet 会话只纠正原文。实测（2026-10-22）带上下文时 Sonnet 和 Haiku 一样快，但 Haiku 会编造原文没有的词。
     var correctionModel: ModelChoice? {
         if settings.translationModel.isLanguageModel { return settings.translationModel }
         return claudeAvailable ? .claudeCode("sonnet") : nil
@@ -174,12 +174,15 @@ extension SubtitleController {
         }
         let primary = usingFallback ? nil : translator
         if let primary {
+            if primary === basicTranslator { requestCorrection(id, source: source) }
             do {
                 let cjk = settings.targetIsCJK
                 let result = try await primary.translate(source, context: context) { [weak self] partial in
                     let visible = TranslationOutput.visibleTranslation(partial, targetIsCJK: cjk)
                     Task { @MainActor in self?.updatePartial(id, visible) }
                 }
+                // 纠错会话在这期间换掉了原文：这份译文作废，纠正后会重新翻译。
+                guard let j = index(of: id), lines[j].source == source else { return }
                 let output = TranslationOutput.split(result, original: source, targetIsCJK: cjk)
                 finishLine(id, translation: output.translation, note: nil, correctedSource: output.correctedSource)
                 return

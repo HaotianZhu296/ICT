@@ -14,7 +14,7 @@ extension SubtitleController {
     }
 
     func persist(_ id: UUID) {
-        guard let line = lines.first(where: { $0.id == id }) else { return }
+        guard let line = lines.first(where: { $0.id == id }), !line.correctionPending else { return }
         store?.append(TranscriptFormat.entry(time: line.time, sourceLabel: line.sourceLabel,
                                              source: line.source, translation: line.translation,
                                              original: line.originalSource))

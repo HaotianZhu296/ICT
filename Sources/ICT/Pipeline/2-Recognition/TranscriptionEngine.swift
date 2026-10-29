@@ -8,7 +8,8 @@ struct FinalResult: Sendable {
     /// 在音频时间轴上的起止秒数（从开始采集算起）；没有逐词时间时为 nil。
     var start: Double?
     var end: Double?
-    /// 各个词的置信度，用来自动判断这位讲者好不好识别。
+    /// 各个词和它们的置信度：判断这位讲者好不好识别，以及这句里有没有可能听错的词。
+    var words: [String]
     var confidences: [Double]
     /// 长句说到一半、在讲者换气处提前确认的（`BreathCutter`）：这里是一个从句的结尾，分句时不用再等后文。
     var endsClause = false
@@ -17,6 +18,7 @@ struct FinalResult: Sendable {
         self.text = text
         start = words.map(\.start).min()
         end = words.map(\.end).max()
+        self.words = words.map(\.text)
         confidences = words.map(\.confidence)
     }
 
@@ -25,6 +27,7 @@ struct FinalResult: Sendable {
         self.text = text
         self.start = start
         self.end = end
+        words = []
         confidences = []
         endsClause = true
     }

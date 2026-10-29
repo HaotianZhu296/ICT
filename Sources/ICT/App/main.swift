@@ -37,6 +37,8 @@ func runTranscribe(_ source: TranscribeSource) async {
             case .final(let result):
                 let conf = result.confidences.isEmpty ? 0 : result.confidences.reduce(0, +) / Double(result.confidences.count)
                 print("\(stamp()) = \(result.text)  [conf \(String(format: "%.2f", conf))]")
+                let unsure = zip(result.words, result.confidences).filter { $0.1 < 0.5 }
+                if !unsure.isEmpty { print("        unsure: " + unsure.map { "\($0.0) \(String(format: "%.2f", $0.1))" }.joined(separator: ", ")) }
                 for s in await segmenter.add(result.text) { print("\(stamp()) >>> SEGMENT: \(s)") }
                 if result.endsClause { for s in await segmenter.flush() { print("\(stamp()) >>> SEGMENT (breath): \(s)") } }
             case .filtered(let text):

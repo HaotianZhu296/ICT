@@ -243,7 +243,9 @@ final class LegacySpeechEngine: SpeechEngine, @unchecked Sendable {
             final.end = max(start, speech.end)
         }
         // 置信度为 0 表示识别器没有给出，不能当成“很难识别”。
-        final.confidences = final.confidences.filter { $0 > 0 }
+        let known = zip(final.words, final.confidences).filter { $0.1 > 0 }
+        final.words = known.map(\.0)
+        final.confidences = known.map(\.1)
         events?.yield(.final(final))
     }
 

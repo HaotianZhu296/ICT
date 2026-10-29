@@ -183,7 +183,7 @@
 "离线翻译，速度快，不需要账号。" = "Works offline, fast, no account needed.";
 "讲者口音较重、识别不准时，自动让大模型按发音和上下文纠正识别错误。使用 Google 翻译或 Apple 本地翻译时，纠正期间临时改用 Claude Sonnet，需要本机已登录 Claude Code。" = "When the speaker has a strong accent and recognition is unreliable, a language model fixes misheard words from pronunciation and context. With Google Translate or Apple Translation, Claude Sonnet is used while correcting; this requires Claude Code signed in on this Mac.";
 "识别置信度较低。自动纠正需要本机已登录 Claude Code。" = "Recognition confidence is low. Automatic correction requires Claude Code signed in on this Mac.";
-"%@ · 纠正中" = "%@ · Correcting";
+"%@ · %@ 纠正" = "%@ · %@ correcting";
 "ICT 历史记录" = "ICT History";
 "历史记录…" = "History…";
 "已总结" = "Summarized";

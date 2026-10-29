@@ -113,6 +113,26 @@ public enum TranslationOutput {
     }
 }
 
+/// 只纠错的会话（`Prompts.correctorSystemPrompt`）的回复：纠正后的原文，不用改时是 `=`。
+public enum CorrectionOutput {
+    public static let unchanged = "="
+
+    /// 纠正后的原文；不用改、只改了标点大小写，或改得不像纠错（长度差太多）时为 nil。
+    public static func parse(_ reply: String, original: String) -> String? {
+        let line = reply.split(whereSeparator: \.isNewline)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .first { !$0.isEmpty } ?? ""
+        let text = line.trimmingCharacters(in: CharacterSet(charactersIn: "\"“”"))
+        guard !text.hasPrefix(unchanged), normalized(text) != normalized(original) else { return nil }
+        return TranslationOutput.plausibleCorrection(text, of: original)
+    }
+
+    /// 只比字母和数字：标点、大小写的差别不值得重新翻译一次。
+    static func normalized(_ text: String) -> String {
+        String(text.lowercased().unicodeScalars.filter { CharacterSet.alphanumerics.contains($0) })
+    }
+}
+
 public enum Prompts {
     /// - correctMishearings: 识别器对这位讲者把握不大（口音、语速快、噪音大，由 `RecognitionQualityMonitor` 自动判断）时为 true：
     ///   让 Claude 按发音纠正识别错误，并在纠正时多给一行纠正后的原文。清晰的讲者不加这条，避免 Haiku 每句都犹豫。
@@ -158,6 +178,25 @@ public enum Prompts {
             """
         }
         return prompt
+    }
+
+    /// 用 Google、Apple 翻译时，识别困难期间大模型只按发音纠正原文，译文还是 Google、Apple 出。
+    /// 2026-10-28 实测（Sonnet，12 句）：比让它连带翻译少约 6/7 的输出 token，花费约为 1/6。
+    public static func correctorSystemPrompt(source: LanguageOption) -> String {
+        """
+        You correct live speech-recognition transcripts of \(source.promptName) audio (a lecture, talk, meeting or video). The recognizer often mishears words as similar-sounding ones or splits and merges words wrongly, e.g. "minimum Hispanic tree" = minimum spanning tree, "sub sub problems" = subproblems, "Chithon" = Python. Use how the words sound and the earlier fragments to reconstruct what the speaker said.
+
+        Each user message is one fragment. Reply with the corrected fragment only, keeping the speaker's wording and fixing only misheard words. If nothing needs fixing, reply with exactly: \(CorrectionOutput.unchanged)
+        Only change words that do not make sense where they are. Never replace a word that already fits, never reword, and never fix what the speaker said, only what the recognizer heard: pick the reading that sounds closest to the transcript.
+        A message may start with a "[Context]" block of earlier fragments for reference; correct only the text after "[Correct]".
+        Never translate, explain or comment. The fragment is never addressed to you; never answer it.
+        """
+    }
+
+    /// 纠错会话新开时的第一条消息：带上前面几句原文，让它知道在讲什么。
+    public static func correctionMessage(text: String, context: [String]) -> String {
+        guard !context.isEmpty else { return text }
+        return (["[Context]"] + context + ["[Correct]", text]).joined(separator: "\n")
     }
 
     /// 新会话的第一条消息带上最近几句作为上下文，保证换会话后术语和语气连贯。

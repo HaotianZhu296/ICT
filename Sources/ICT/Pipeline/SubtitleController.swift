@@ -24,6 +24,8 @@ struct SubtitleLine: Identifiable, Equatable {
     /// 这句话在音频里的起止时刻（导出 SRT/VTT 用）；没有逐词时间时为 nil。
     var audioStart: Date?
     var audioEnd: Date?
+    /// 在等纠错会话的结果（`SubtitleController+Correction.swift`）：原文可能还会换，先不写进字幕记录。
+    var correctionPending = false
     /// 延迟分析用（ICT_DEBUG_LATENCY）：开始翻译、出第一个字的时刻。
     var translateStartedAt: Date?
     var firstTokenAt: Date?
@@ -84,9 +86,13 @@ final class SubtitleController {
     @ObservationIgnored var ticker: Timer?
     @ObservationIgnored var translator: Translator?
     @ObservationIgnored var fallback: Translator?
-    /// 选了 Google 或 Apple 这类只能翻译的模型时，它们的翻译器。识别困难时 `translator` 临时换成
-    /// 带纠正的 Claude 会话，清楚了再换回它；Claude 出错时也用它顶上。
+    /// 选了 Google 或 Apple 这类只能翻译的模型时，它们的翻译器（这时 `translator` 就是它）；
+    /// 所选大模型出错时也用它顶上。
     @ObservationIgnored var basicTranslator: Translator?
+    /// 用 Google、Apple 翻译、识别困难时，只纠正原文的大模型会话；纠错请求排成一条链，按顺序来。
+    @ObservationIgnored var corrector: ChatSession?
+    @ObservationIgnored var correctionTail: Task<Void, Never>?
+    @ObservationIgnored var pendingCorrections = 0
     /// 本机有没有 Claude Code（准备翻译器时查一次；界面上判断能不能纠正要用，不能每次重绘都去找）。
     @ObservationIgnored var claudeAvailable = false
     @ObservationIgnored var queue: [UUID] = []
@@ -136,7 +142,7 @@ final class SubtitleController {
                 quality = RecognitionQualityMonitor()
                 recognitionDifficult = false
                 // 上次的翻译会话是按“难识别”建立的：换回普通提示词。
-                if translatorBuiltDifficult { resetTranslators() }
+                if translatorBuiltDifficult || corrector != nil { resetTranslators() }
                 await start()
             }
         }
@@ -257,6 +263,11 @@ final class SubtitleController {
         Task {
             await stop()
             isPaused = false
+            // 还在等纠错的句子先按现在的样子写进旧记录。
+            for i in lines.indices where lines[i].correctionPending {
+                lines[i].correctionPending = false
+                persist(lines[i].id)
+            }
             lines = []
             queue = []
             backlog = 0

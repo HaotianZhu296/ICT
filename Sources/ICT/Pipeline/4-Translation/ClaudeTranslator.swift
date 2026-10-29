@@ -169,6 +169,9 @@ final class ClaudeTranslator: Translator, @unchecked Sendable {
     private func handleStdout(_ data: Data, from proc: Process) {
         guard process === proc, !data.isEmpty else { return }
         for line in lineBuffer.append(data) {
+            if ProcessInfo.processInfo.environment["ICT_DEBUG_USAGE"] != nil, let usage = ClaudeStream.usage(line: line) {
+                FileHandle.standardError.write(Data("[claude usage] \(usage)\n".utf8))
+            }
             guard let event = ClaudeStream.parse(line: line) else { continue }
             switch event {
             case .textDelta(let delta):
