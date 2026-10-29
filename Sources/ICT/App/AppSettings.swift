@@ -160,6 +160,8 @@ final class AppSettings {
     var backgroundOpacity: Double { didSet { save("backgroundOpacity", backgroundOpacity) } }
     var visibleLines: Int { didSet { save("visibleLines", visibleLines) } }
     var overlayWidth: Double { didSet { save("overlayWidth", overlayWidth) } }
+    /// 最小化到菜单栏时小字幕的宽度（pt）。
+    var menuBarWidth: Double { didSet { save("menuBarWidth", menuBarWidth) } }
     /// 0 = 自动高度（显示最近 N 句）；大于 0 = 固定高度，字幕可滚动查看历史。
     var overlayHeight: Double { didSet { save("overlayHeight", overlayHeight) } }
     var clickThrough: Bool { didSet { save("clickThrough", clickThrough) } }
@@ -202,6 +204,7 @@ final class AppSettings {
         visibleLines = d.object(forKey: "visibleLines") as? Int ?? 2
         let overlaySize = Self.defaultOverlaySize
         overlayWidth = d.object(forKey: "overlayWidth") as? Double ?? overlaySize.width
+        menuBarWidth = d.object(forKey: "menuBarWidth") as? Double ?? 240
         overlayHeight = d.object(forKey: "overlayHeight") as? Double ?? overlaySize.height
         clickThrough = d.object(forKey: "clickThrough") as? Bool ?? false
         pinned = d.object(forKey: "pinned") as? Bool ?? true

@@ -89,7 +89,11 @@ final class TranscriptionEngine: @unchecked Sendable {
     }
 
     func append(_ buffer: AVAudioPCMBuffer) { engine.append(buffer) }
-    var inputStatus: (level: Float, silentFor: TimeInterval) { engine.inputStatus }
+    /// 半秒没收到音频时音量算 0：采集断了的话，状态条不能一直停在最后的音量上，看起来像还在收音。
+    var inputStatus: (level: Float, silentFor: TimeInterval) {
+        let status = engine.inputStatus
+        return (status.silentFor > 0.5 ? 0 : status.level, status.silentFor)
+    }
     func finalizePending() async { await engine.finalizePending() }
     func stop() async { await engine.stop() }
 }

@@ -15,7 +15,7 @@ It was built for sitting in a lecture with a strong-accented speaker and still f
 - **Accent correction** (on by default): when recognition confidence drops, a language model fixes misheard words from pronunciation and context (e.g. "Chithon" → Python, "things P" → ThingSpeak). With Google/Apple translation, Claude Sonnet only corrects the original text while recognition is difficult: each line shows Google's translation right away, and lines Claude corrects are re-translated in place. This uses about 1/6 of the tokens of having Claude translate every line.
 - **Transcripts and history**: every sentence is written to `~/Documents/ICT/<start time>.md`. The history window lists past sessions and summarizes any of them with one click.
 - **AI assistant** beside the subtitles: ask questions about what was just said, or have it save notes to files.
-- **Minimize to the menu bar**: the subtitle window hides and the latest line keeps showing in the menu bar, original on top and translation below.
+- **Minimize to the menu bar**: the subtitle window hides and the menu bar keeps showing what is being said (top) and the latest translation (bottom). Drag it left or right to resize.
 - **Light / dark appearance** (follows the system by default), English and Simplified Chinese UI (Settings › Advanced › Language).
 
 ## Requirements
@@ -74,7 +74,7 @@ ICT shows up in the Dock like any app; click its icon to bring hidden subtitles 
 | 📄 | This session's transcript: notes, SRT/WebVTT export, new session, and the **history** window |
 | ✨ | Show / hide the AI assistant |
 | ⚙︎ | Settings |
-| ⬆︎ | Minimize to the menu bar: the latest line (original and translation) is shown in the menu bar; click it to bring the subtitle window back |
+| ⬆︎ | Minimize to the menu bar: the menu bar shows what is being said and the latest translation. Click it to bring the subtitle window back; drag it left or right to change its width (also in Settings › Subtitles) |
 | ✕ | Quit |
 
 - **⌃⌥L** hides or shows the subtitles; opening ICT again from Spotlight also brings them back.

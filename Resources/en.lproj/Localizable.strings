@@ -238,4 +238,6 @@
 "继续" = "Resume";
 "已暂停" = "Paused";
 "最小化到菜单栏" = "Minimize to Menu Bar";
-"点击恢复字幕窗口" = "Click to restore the subtitle window";
+"单击恢复字幕窗口，左右拖动调整宽度" = "Click to restore the subtitle window; drag left or right to resize";
+"菜单栏字幕宽度" = "Menu Bar Width";
+"最小化到菜单栏时小字幕的宽度。也可以在菜单栏上按住小字幕左右拖动。" = "Width of the mini subtitles when minimized to the menu bar. You can also drag them left or right in the menu bar.";

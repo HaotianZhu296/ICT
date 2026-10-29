@@ -229,6 +229,9 @@ struct SettingsView: View {
                             .help("字幕恢复默认大小，移回屏幕右上角。")
                     }
                 }
+                slider("菜单栏字幕宽度", value: $settings.menuBarWidth, range: MenuBarTicker.widthRange,
+                       text: "\(Int(settings.menuBarWidth)) pt")
+                    .help("最小化到菜单栏时小字幕的宽度。也可以在菜单栏上按住小字幕左右拖动。")
                 Toggle("显示状态条", isOn: $settings.showStatusBar)
                     .help("在字幕底部显示音频输入、识别与翻译状态。")
                 Toggle("置顶字幕", isOn: $settings.pinned)

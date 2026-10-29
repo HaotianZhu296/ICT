@@ -23,7 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// 平时没有菜单栏右侧的状态图标（2026-10-22 用户要求去掉）；只在最小化到菜单栏时出现（`MenuBarTicker`）。
     /// ⌃⌥L 收起/显示字幕。
     private var showHotKey: GlobalHotKey?
-    private lazy var ticker = MenuBarTicker(controller: controller) { [weak self] in self?.showSubtitles() }
+    private lazy var ticker = MenuBarTicker(controller: controller, settings: settings) { [weak self] in self?.showSubtitles() }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.appearance = settings.appearance.nsAppearance

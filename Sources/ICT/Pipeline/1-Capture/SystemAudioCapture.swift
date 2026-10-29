@@ -39,18 +39,14 @@ final class SystemAudioCapture: AudioCapture {
         try check(AudioHardwareCreateProcessTap(description, &tap), "创建系统音频采集")
         tapID = tap
 
-        let outputDevice = try readProperty(AudioObjectID(kAudioObjectSystemObject),
-                                            kAudioHardwarePropertyDefaultOutputDevice, as: AudioDeviceID.self)
-        let outputUID = try readStringProperty(outputDevice, kAudioDevicePropertyDeviceUID)
-
+        // 聚合设备里只放 tap，不挂输出设备：麦克风打开系统语音处理（“麦克风降噪”）时会占住输出设备做回声消除，
+        // 挂着输出设备的聚合设备随之停摆，一帧音频都收不到（2026-10-29 实测，“两者”模式下系统声音没有字幕）。
         let aggregate: [String: Any] = [
             kAudioAggregateDeviceNameKey: "ICT Tap",
             kAudioAggregateDeviceUIDKey: UUID().uuidString,
-            kAudioAggregateDeviceMainSubDeviceKey: outputUID,
             kAudioAggregateDeviceIsPrivateKey: true,
             kAudioAggregateDeviceIsStackedKey: false,
             kAudioAggregateDeviceTapAutoStartKey: true,
-            kAudioAggregateDeviceSubDeviceListKey: [[kAudioSubDeviceUIDKey: outputUID]],
             kAudioAggregateDeviceTapListKey: [[
                 kAudioSubTapDriftCompensationKey: true,
                 kAudioSubTapUIDKey: description.uuid.uuidString,
@@ -161,15 +157,5 @@ final class SystemAudioCapture: AudioCapture {
         defer { pointer.deallocate() }
         try check(AudioObjectGetPropertyData(object, &address, 0, nil, &size, pointer), "读取音频属性")
         return pointer.load(as: T.self)
-    }
-
-    private func readStringProperty(_ object: AudioObjectID, _ selector: AudioObjectPropertySelector) throws -> String {
-        var address = AudioObjectPropertyAddress(mSelector: selector, mScope: kAudioObjectPropertyScopeGlobal,
-                                                 mElement: kAudioObjectPropertyElementMain)
-        var size = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
-        var value: Unmanaged<CFString>?
-        try check(AudioObjectGetPropertyData(object, &address, 0, nil, &size, &value), "读取音频设备")
-        guard let value else { throw CaptureError.coreAudio("读取音频设备", -1) }
-        return value.takeRetainedValue() as String
     }
 }

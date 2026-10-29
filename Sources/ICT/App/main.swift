@@ -6,7 +6,7 @@ import SwiftUI
 
 // 命令行自检模式（不启动界面）：
 //   ICT --transcribe-file <音频文件> [--locale en-US] [--guard zh-CN]（过滤中文说话声）[--realtime]（按真实速度播放）
-//   ICT --transcribe-system <秒数> [--locale en-US]：识别电脑正在播放的声音（要通过 App 包启动，权限才记在 ICT 上）
+//   ICT --transcribe-system <秒数> [--locale en-US] [--with-mic [--noise-reduction]]：识别电脑正在播放的声音（要通过 App 包启动，权限才记在 ICT 上）
 //   ICT --translate "句子1" "句子2" ... [--engine claude|google|apple|api]
 //     --engine api 时：--format openai|anthropic --base-url URL --model 模型名，密钥从环境变量 ICT_API_KEY 读取 [--model haiku] [--target zh-Hans] [--correct]（按发音纠正识别错误）
 let arguments = CommandLine.arguments
@@ -47,6 +47,11 @@ func runTranscribe(_ source: TranscribeSource) async {
         })
         switch source {
         case .system(let seconds):
+            // --with-mic [--noise-reduction]：先打开麦克风再录系统声音，和“两者”模式一样
+            // （蓝牙耳机会切到通话模式；降噪会打开系统语音处理）。
+            let mic = MicrophoneCapture(noiseReduction: arguments.contains("--noise-reduction"))
+            if arguments.contains("--with-mic") { try mic.start { _ in } }
+            defer { mic.stop() }
             let capture = SystemAudioCapture()
             // 采样率变了（例如蓝牙耳机进出通话模式）时打印新格式。
             let lastRate = UncheckedSendable(OSAllocatedUnfairLock(initialState: 0.0))
