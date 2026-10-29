@@ -81,6 +81,34 @@ enum AppearanceMode: String, CaseIterable, Identifiable {
     }
 }
 
+/// 界面语言。macOS 按程序自己域里的 `AppleLanguages` 选界面语言，启动时就定了，改完要重新打开 App。
+enum InterfaceLanguage: String, CaseIterable, Identifiable {
+    case system, chinese = "zh-Hans", english = "en"
+    var id: String { rawValue }
+    /// 语言名称用它自己的文字写，选错了也认得出来。
+    var title: String {
+        switch self {
+        case .system: L("跟随系统")
+        case .chinese: "简体中文"
+        case .english: "English"
+        }
+    }
+
+    static func load(_ d: UserDefaults) -> InterfaceLanguage {
+        guard d.persistentDomain(forName: Bundle.main.bundleIdentifier ?? "")?["AppleLanguages"] != nil,
+              let first = d.stringArray(forKey: "AppleLanguages")?.first
+        else { return .system }
+        return first.hasPrefix("zh") ? .chinese : .english
+    }
+
+    func save(_ d: UserDefaults) {
+        if self == .system { d.removeObject(forKey: "AppleLanguages") } else { d.set([rawValue], forKey: "AppleLanguages") }
+    }
+
+    /// 这次启动时用的界面语言（和设置不同时提示重新打开）。
+    static let atLaunch = load(.standard)
+}
+
 enum DisplayMode: String, CaseIterable, Identifiable {
     case bilingual, translationOnly, sourceOnly
     var id: String { rawValue }
@@ -126,6 +154,7 @@ final class AppSettings {
 
     var displayMode: DisplayMode { didSet { save("displayMode", displayMode.rawValue) } }
     var appearance: AppearanceMode { didSet { save("appearance", appearance.rawValue) } }
+    var interfaceLanguage: InterfaceLanguage { didSet { interfaceLanguage.save(.standard) } }
     var translationFontSize: Double { didSet { save("translationFontSize", translationFontSize) } }
     var sourceFontSize: Double { didSet { save("sourceFontSize", sourceFontSize) } }
     var backgroundOpacity: Double { didSet { save("backgroundOpacity", backgroundOpacity) } }
@@ -166,6 +195,7 @@ final class AppSettings {
         assistantHeight = d.object(forKey: "assistantHeight") as? Double ?? 420
         displayMode = DisplayMode(rawValue: d.string(forKey: "displayMode") ?? "") ?? .bilingual
         appearance = AppearanceMode(rawValue: d.string(forKey: "appearance") ?? "") ?? .system
+        interfaceLanguage = .atLaunch
         translationFontSize = d.object(forKey: "translationFontSize") as? Double ?? 18
         sourceFontSize = d.object(forKey: "sourceFontSize") as? Double ?? 11
         backgroundOpacity = d.object(forKey: "backgroundOpacity") as? Double ?? 0.62

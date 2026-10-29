@@ -15,7 +15,8 @@ ICT 是一个 macOS 小工具：实时监听**麦克风**（讲座、会议、�
 - **口音纠正**（默认打开）：识别置信度变低时，让大模型按发音和上下文纠正听错的词（例如 “Chithon” → Python、“things P” → ThingSpeak）。使用 Google 或 Apple 翻译时，纠正期间临时改用 Claude Sonnet。
 - **字幕记录与历史**：每句原文和译文实时写入 `~/Documents/ICT/<开始时间>.md`。历史记录窗口列出以前的全部记录，任意一份都能一键总结。
 - **AI 助手**在字幕旁边：问刚才讲的内容，或者让它把要点存成文件。
-- **浅色 / 深色外观**（默认跟随系统），界面有简体中文和英文。
+- **最小化到菜单栏**：字幕窗口收起后，顶部菜单栏继续显示最新一句，上面原文、下面译文。
+- **浅色 / 深色外观**（默认跟随系统），界面有简体中文和英文（设置 › 高级 › 界面语言）。
 
 ## 运行要求
 
@@ -47,7 +48,7 @@ ICT 是一个 macOS 小工具：实时监听**麦克风**（讲座、会议、�
 git clone https://github.com/HaotianZhu296/ICT.git
 cd ICT
 scripts/make-signing-cert.sh    # 只需一次：创建本机签名证书“ICT Local Signing”
-scripts/build-app.sh --install  # 构建，安装到 ~/Applications 并打开
+scripts/build-app.sh --install  # 构建，安装到 /Applications 并打开
 ```
 
 本机证书让 App 的签名身份保持不变，重新构建后系统不会再次询问麦克风和系统录音权限。没有证书时用 ad-hoc 签名，每次重新构建都要重新授权。
@@ -61,16 +62,19 @@ scripts/build-app.sh --install  # 构建，安装到 ~/Applications 并打开
 
 ## 使用
 
-ICT 没有菜单栏图标和 Dock 图标，所有操作都在字幕窗口上。鼠标移到字幕上出现快捷按钮；停在某个按钮上时，按钮会变亮，下面显示它的功能名。
+ICT 和普通 App 一样显示在程序坞里：点图标可以把收起的字幕叫回来，右键图标可以开始、暂停或停止。ICT 在前台时，顶部菜单栏有“字幕”菜单（开始/停止、暂停/继续、显示/收起、最小化到菜单栏、置顶、锁定、AI 助手、字幕记录、历史记录）。平时主要用字幕窗口：鼠标移到字幕上出现快捷按钮；停在某个按钮上时，按钮会变亮，下面显示它的功能名。
 
 | 按钮 | 作用 |
 |---|---|
-| ▶ / ⏸ | 开始 / 停止 |
+| ▶ | 开始 |
+| ⏸ / ▶ | 暂停 / 继续：字幕、记录和 AI 助手的对话都保留 |
+| ⏹ | 停止：下次开始时 AI 助手开新对话；字幕记录一直写在同一个文件里，直到开始新的记录 |
 | 📌 | 置顶（默认打开）：字幕总在所有窗口上面。取消后可以被别的窗口盖住，点一下字幕回到最前面 |
 | 🎙 | 音源：麦克风、系统音频或两者 |
 | 📄 | 本次的字幕记录：生成笔记、导出 SRT/WebVTT、开始新的记录，以及打开**历史记录** |
 | ✨ | 显示 / 隐藏 AI 助手 |
 | ⚙︎ | 设置 |
+| ⬆︎ | 最小化到菜单栏：字幕窗口收起，顶部菜单栏显示最新一句的原文和译文；点它恢复字幕窗口 |
 | ✕ | 退出 |
 
 - **⌃⌥L** 收起或显示字幕；用 Spotlight 再打开一次 ICT 也能把字幕叫回来。
@@ -78,6 +82,7 @@ ICT 没有菜单栏图标和 Dock 图标，所有操作都在字幕窗口上。�
 - 在字幕上**向上滚动**查看前面的句子，点“返回实时”回到最新。
 - **设置**左边是侧边栏（翻译、音频、字幕、记录、高级），点一下跳到那一组。改动立即生效，可以边改边看效果；点右上角 **完成** 保留。直接关窗口时，ICT 会问你保留（完成）还是恢复到打开设置前的样子（取消）。
 - **锁定**（设置 › 字幕）后字幕点不到、不挡操作。鼠标移到字幕上，点右上角的锁解锁。
+- **界面语言**（设置 › 高级）：跟随系统、简体中文或 English，点 **重新打开** 后生效。
 
 ## 翻译模型
 
@@ -110,6 +115,7 @@ Google 翻译用的是非官方的免费网页接口：不需要密钥，但没�
 
 - **断句**（`Sources/ICTCore/2-Segmentation`）：完整的句子立即送去翻译；“Okay.”“Right?” 这类碎句和相邻句子合并；太长的字幕在逗号处拆开。讲者一直不停时，`BreathCutter` 从音量里找换气的短暂回落，`PartialCommitter` 把已经识别出的词提前确认，前半句不用等讲者停下来就能翻译。
 - **识别质量**（`Sources/ICTCore/1-Recognition`）：按最近几十个词的平均置信度决定什么时候开始口音纠正（很快）、什么时候停止（连续清楚一分钟后）。
+- **系统声音**（`Pipeline/1-Capture`）：用 Core Audio process tap 接到一个私有的聚合设备上。送来的音频是输出设备的采样率（蓝牙耳机一般 44.1 kHz，有程序用它的麦克风时只有 16 kHz），所以 ICT 从聚合设备读采样率，变了就重建 tap。
 - **翻译队列**：Google 和 Apple 几句同时翻译；大模型会话带着上下文按顺序翻译。翻译跟不上时把积压的句子合并成一次请求，延迟不会越拖越长。
 
 ### 目录结构
@@ -124,7 +130,7 @@ Sources/ICT/
     1-Capture/            麦克风、系统声音（Core Audio process tap）、测试音频文件
     2-Recognition/        SpeechAnalyzer / SFSpeechRecognizer 识别引擎，处理识别结果
     4-Translation/        Google、Apple、Claude 命令行和 HTTP API 翻译器，翻译队列
-    5-Display/            悬浮字幕窗口
+    5-Display/            悬浮字幕窗口、菜单栏小字幕
     6-Transcript/         记录文件、导出、笔记，字幕记录和历史记录窗口
   Assistant/              AI 助手会话和面板
   Settings/               设置窗口和模型服务窗口
@@ -140,6 +146,7 @@ swift build
 scripts/test.sh                          # 单元测试（补上命令行工具链需要的宏插件路径）
 B=.build/debug/ICT
 $B --transcribe-file talk.aiff --realtime                # 识别 + 断句
+open -n --stdout out.txt build/ICT.app --args --transcribe-system 30   # 识别电脑正在播放的声音
 $B --translate "First sentence." "Second one." --engine google
 $B --export-test talk.aiff out.srt                       # 跑完整条流水线后导出 SRT
 $B --render-window out.png --hover                       # 字幕窗口离屏截图

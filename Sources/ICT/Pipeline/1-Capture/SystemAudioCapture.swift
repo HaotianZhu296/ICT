@@ -39,11 +39,6 @@ final class SystemAudioCapture: AudioCapture {
         try check(AudioHardwareCreateProcessTap(description, &tap), "创建系统音频采集")
         tapID = tap
 
-        var asbd = try readProperty(tap, kAudioTapPropertyFormat, as: AudioStreamBasicDescription.self)
-        guard let format = AVAudioFormat(streamDescription: &asbd) else {
-            throw CaptureError.coreAudio("读取系统音频格式", -1)
-        }
-
         let outputDevice = try readProperty(AudioObjectID(kAudioObjectSystemObject),
                                             kAudioHardwarePropertyDefaultOutputDevice, as: AudioDeviceID.self)
         let outputUID = try readStringProperty(outputDevice, kAudioDevicePropertyDeviceUID)
@@ -65,6 +60,17 @@ final class SystemAudioCapture: AudioCapture {
         try check(AudioHardwareCreateAggregateDevice(aggregate as CFDictionary, &agg), "创建聚合音频设备")
         aggregateID = agg
 
+        // 采样率要用聚合设备的：tap 报告的总是 48 kHz，实际送来的音频却跟着输出设备走
+        // （蓝牙耳机平时 44.1 kHz，有程序用它的麦克风时切到通话模式，只有 16 kHz）。
+        // 当成 48 kHz 喂给识别器，声音就快了 9% 甚至 3 倍，识别不出字（2026-10-28 实测）。
+        var asbd = try readProperty(tap, kAudioTapPropertyFormat, as: AudioStreamBasicDescription.self)
+        let rate = try readProperty(agg, kAudioDevicePropertyNominalSampleRate, as: Float64.self)
+        if rate > 0 { asbd.mSampleRate = rate }
+        guard let format = AVAudioFormat(streamDescription: &asbd) else {
+            throw CaptureError.coreAudio("读取系统音频格式", -1)
+        }
+        listenForSampleRateChanges(of: agg)
+
         let deliver = onBuffer
         try check(AudioDeviceCreateIOProcIDWithBlock(&procID, agg, queue) { _, inputData, _, _, _ in
             guard let buffer = AVAudioPCMBuffer(pcmFormat: format, bufferListNoCopy: inputData, deallocator: nil),
@@ -77,6 +83,9 @@ final class SystemAudioCapture: AudioCapture {
 
     private func stopTap() {
         if aggregateID != kAudioObjectUnknown {
+            if let block = sampleRateListener {
+                AudioObjectRemovePropertyListenerBlock(aggregateID, &sampleRateAddress, queue, block)
+            }
             AudioDeviceStop(aggregateID, procID)
             if let procID { AudioDeviceDestroyIOProcID(aggregateID, procID) }
             AudioHardwareDestroyAggregateDevice(aggregateID)
@@ -85,11 +94,36 @@ final class SystemAudioCapture: AudioCapture {
             AudioHardwareDestroyProcessTap(tapID)
         }
         procID = nil
+        sampleRateListener = nil
         aggregateID = AudioObjectID(kAudioObjectUnknown)
         tapID = AudioObjectID(kAudioObjectUnknown)
     }
 
-    // MARK: - 输出设备切换（例如插拔耳机）时重建 tap
+    // MARK: - 输出设备切换（例如插拔耳机）或采样率变化（蓝牙耳机进出通话模式）时重建 tap
+
+    private var sampleRateAddress = AudioObjectPropertyAddress(
+        mSelector: kAudioDevicePropertyNominalSampleRate,
+        mScope: kAudioObjectPropertyScopeGlobal,
+        mElement: kAudioObjectPropertyElementMain
+    )
+    private var sampleRateListener: AudioObjectPropertyListenerBlock?
+
+    private func listenForSampleRateChanges(of device: AudioObjectID) {
+        let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
+            // 不在这个设备自己的回调里拆掉它。
+            self?.queue.async { self?.restartTap(ifStillOn: device) }
+        }
+        sampleRateListener = block
+        AudioObjectAddPropertyListenerBlock(device, &sampleRateAddress, queue, block)
+    }
+
+    private func restartTap(ifStillOn device: AudioObjectID) {
+        guard onBuffer != nil, aggregateID == device else { return }
+        let rate = (try? readProperty(device, kAudioDevicePropertyNominalSampleRate, as: Float64.self)) ?? 0
+        appLog.notice("system audio: sample rate changed to \(rate, privacy: .public) Hz, rebuilding tap")
+        stopTap()
+        try? startTap()
+    }
 
     private var defaultOutputAddress = AudioObjectPropertyAddress(
         mSelector: kAudioHardwarePropertyDefaultOutputDevice,

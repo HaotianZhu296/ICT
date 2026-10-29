@@ -252,11 +252,30 @@ struct SettingsView: View {
             .id(SettingsSection.transcripts)
 
             Section(SettingsSection.advanced.title) {
+                Picker("界面语言", selection: $settings.interfaceLanguage) {
+                    ForEach(InterfaceLanguage.allCases) { Text($0.title).tag($0) }
+                }
+                if settings.interfaceLanguage != InterfaceLanguage.atLaunch {
+                    LabeledContent {
+                        Button("重新打开", action: relaunch)
+                    } label: {
+                        Text("重新打开 ICT 后生效").foregroundStyle(.secondary)
+                    }
+                }
                 TextField("Claude 路径", text: $settings.claudePath, prompt: Text("自动查找"))
             }
             .id(SettingsSection.advanced)
         }
         .formStyle(.grouped)
+    }
+
+    /// 退出后由 shell 稍等片刻再打开自己（新语言在启动时读取）。
+    private func relaunch() {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/bin/sh")
+        task.arguments = ["-c", "sleep 1; /usr/bin/open -n \"$0\"", Bundle.main.bundlePath]
+        try? task.run()
+        NSApp.terminate(nil)
     }
 
     /// 选了 Apple 本地翻译时的说明：能力范围，以及语言包还没下载时提供下载。

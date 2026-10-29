@@ -1,10 +1,12 @@
 import AVFoundation
 import AppKit
 import ICTCore
+import os
 import SwiftUI
 
 // 命令行自检模式（不启动界面）：
 //   ICT --transcribe-file <音频文件> [--locale en-US] [--guard zh-CN]（过滤中文说话声）[--realtime]（按真实速度播放）
+//   ICT --transcribe-system <秒数> [--locale en-US]：识别电脑正在播放的声音（要通过 App 包启动，权限才记在 ICT 上）
 //   ICT --translate "句子1" "句子2" ... [--engine claude|google|apple|api]
 //     --engine api 时：--format openai|anthropic --base-url URL --model 模型名，密钥从环境变量 ICT_API_KEY 读取 [--model haiku] [--target zh-Hans] [--correct]（按发音纠正识别错误）
 let arguments = CommandLine.arguments
@@ -14,7 +16,13 @@ func option(_ name: String) -> String? {
     return arguments[i + 1]
 }
 
-func runTranscribeFile(_ path: String) async {
+/// 自检用的识别来源：音频文件，或电脑正在播放的声音（录若干秒）。
+enum TranscribeSource {
+    case file(String)
+    case system(seconds: Int)
+}
+
+func runTranscribe(_ source: TranscribeSource) async {
     let locale = option("--locale") ?? "en-US"
     let engine = TranscriptionEngine()
     let start = Date()
@@ -35,21 +43,25 @@ func runTranscribeFile(_ path: String) async {
                 print("\(stamp()) x FILTERED: \(text)")
             }
         })
-        let file = try AVAudioFile(forReading: URL(fileURLWithPath: path))
-        let format = file.processingFormat
-        print("[file] \(file.length) frames @ \(format.sampleRate) Hz, \(format.channelCount) ch")
-        if arguments.contains("--realtime") {
-            let capture = FileCapture(url: URL(fileURLWithPath: path))
-            try capture.start { engine.append($0) }
-            try await Task.sleep(for: .seconds(Double(file.length) / format.sampleRate + 3))
-            capture.stop()
-        } else {
-            while file.framePosition < file.length {
-                guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 4096) else { break }
-                try file.read(into: buffer)
-                if buffer.frameLength == 0 { break }
+        switch source {
+        case .system(let seconds):
+            let capture = SystemAudioCapture()
+            // 采样率变了（例如蓝牙耳机进出通话模式）时打印新格式。
+            let lastRate = UncheckedSendable(OSAllocatedUnfairLock(initialState: 0.0))
+            try capture.start { buffer in
+                let rate = buffer.format.sampleRate
+                if lastRate.value.withLock({ old in defer { old = rate }; return old != rate }) {
+                    print("\(stamp()) [system] \(buffer.format)")
+                }
                 engine.append(buffer)
             }
+            for _ in 0..<seconds {
+                try await Task.sleep(for: .seconds(1))
+                print("\(stamp()) [level \(String(format: "%.3f", engine.inputStatus.level))]")
+            }
+            capture.stop()
+        case .file(let path):
+            try await feedFile(path, to: engine)
         }
         await engine.stop()
         for s in await segmenter.flush() { print("\(stamp()) >>> SEGMENT (flush): \(s)") }
@@ -57,6 +69,26 @@ func runTranscribeFile(_ path: String) async {
     } catch {
         print("[error] \(error.localizedDescription)")
         exit(1)
+    }
+}
+
+/// 把音频文件送进识别器：`--realtime` 时按真实速度播放，否则一次喂完。
+func feedFile(_ path: String, to engine: TranscriptionEngine) async throws {
+    let file = try AVAudioFile(forReading: URL(fileURLWithPath: path))
+    let format = file.processingFormat
+    print("[file] \(file.length) frames @ \(format.sampleRate) Hz, \(format.channelCount) ch")
+    if arguments.contains("--realtime") {
+        let capture = FileCapture(url: URL(fileURLWithPath: path))
+        try capture.start { engine.append($0) }
+        try await Task.sleep(for: .seconds(Double(file.length) / format.sampleRate + 3))
+        capture.stop()
+    } else {
+        while file.framePosition < file.length {
+            guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 4096) else { break }
+            try file.read(into: buffer)
+            if buffer.frameLength == 0 { break }
+            engine.append(buffer)
+        }
     }
 }
 
@@ -138,7 +170,7 @@ if let out = option("--render-window") {
         controller.loadPreview(running: !arguments.contains("--idle"))
         let overlay = OverlayWindowController(
             controller: controller, settings: AppSettings.shared,
-            actions: OverlayActions(toggleRunning: {}, togglePin: {}, showHistory: {}, showSettings: {}, quit: {}, toggleAssistant: {}, settingsChanged: {}, manageModels: {}))
+            actions: OverlayActions(toggleRunning: {}, togglePause: {}, togglePin: {}, minimize: {}, showHistory: {}, showSettings: {}, quit: {}, toggleAssistant: {}, settingsChanged: {}, manageModels: {}))
         overlay.state.isHovering = arguments.contains("--hover")
         overlay.state.hoveredTool = option("--hover-tool").map(L)
         if arguments.contains("--light") { overlay.panel.appearance = NSAppearance(named: .aqua) }
@@ -218,7 +250,7 @@ if arguments.contains("--stress-overlay") {
         let controller = SubtitleController(settings: AppSettings.shared)
         let overlay = OverlayWindowController(
             controller: controller, settings: AppSettings.shared,
-            actions: OverlayActions(toggleRunning: {}, togglePin: {}, showHistory: {}, showSettings: {}, quit: {}, toggleAssistant: {}, settingsChanged: {}, manageModels: {}))
+            actions: OverlayActions(toggleRunning: {}, togglePause: {}, togglePin: {}, minimize: {}, showHistory: {}, showSettings: {}, quit: {}, toggleAssistant: {}, settingsChanged: {}, manageModels: {}))
         overlay.panel.setFrameOrigin(NSPoint(x: -20000, y: -20000))
         overlay.show()
         var maxGap = 0.0, last = Date(), n = 0, ticks = 0
@@ -376,7 +408,10 @@ if let path = option("--export-test"), let i = arguments.firstIndex(of: "--expor
 
 // 自检模式不能阻塞主线程（Translation 框架需要主线程的 run loop），所以用 dispatchMain。
 if let path = option("--transcribe-file") {
-    Task.detached { await runTranscribeFile(path); exit(0) }
+    Task.detached { await runTranscribe(.file(path)); exit(0) }
+    dispatchMain()
+} else if let seconds = option("--transcribe-system").flatMap(Int.init) {
+    Task.detached { await runTranscribe(.system(seconds: seconds)); exit(0) }
     dispatchMain()
 } else if let i = arguments.firstIndex(of: "--translate") {
     let texts = arguments[(i + 1)...].prefix { !$0.hasPrefix("--") }
@@ -388,6 +423,6 @@ MainActor.assumeIsolated {
     let app = NSApplication.shared
     let delegate = AppDelegate()
     app.delegate = delegate
-    app.setActivationPolicy(.accessory)
+    app.setActivationPolicy(.regular)
     withExtendedLifetime(delegate) { app.run() }
 }

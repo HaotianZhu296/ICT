@@ -15,7 +15,8 @@ It was built for sitting in a lecture with a strong-accented speaker and still f
 - **Accent correction** (on by default): when recognition confidence drops, a language model fixes misheard words from pronunciation and context (e.g. "Chithon" → Python, "things P" → ThingSpeak). With Google/Apple translation, ICT temporarily switches to Claude Sonnet while correcting.
 - **Transcripts and history**: every sentence is written to `~/Documents/ICT/<start time>.md`. The history window lists past sessions and summarizes any of them with one click.
 - **AI assistant** beside the subtitles: ask questions about what was just said, or have it save notes to files.
-- **Light / dark appearance** (follows the system by default), English and Simplified Chinese UI.
+- **Minimize to the menu bar**: the subtitle window hides and the latest line keeps showing in the menu bar, original on top and translation below.
+- **Light / dark appearance** (follows the system by default), English and Simplified Chinese UI (Settings › Advanced › Language).
 
 ## Requirements
 
@@ -47,7 +48,7 @@ When you update, replace the app in Applications and click **Open Anyway** once 
 git clone https://github.com/HaotianZhu296/ICT.git
 cd ICT
 scripts/make-signing-cert.sh    # once: creates a local signing certificate "ICT Local Signing"
-scripts/build-app.sh --install  # builds, installs to ~/Applications and opens ICT
+scripts/build-app.sh --install  # builds, installs to /Applications and opens ICT
 ```
 
 The local certificate keeps the app's identity stable, so macOS doesn't ask for microphone / system-audio permission again after every rebuild. Without it the app is ad-hoc signed and you will be asked again each time.
@@ -61,16 +62,19 @@ The local certificate keeps the app's identity stable, so macOS doesn't ask for 
 
 ## Using ICT
 
-ICT has no menu bar or Dock icon; everything is on the subtitle window. Hover over it to show the toolbar. Hovering a button highlights it and shows its name.
+ICT shows up in the Dock like any app; click its icon to bring hidden subtitles back, or right-click it to start, pause or stop. While ICT is active, the menu bar has a **Subtitles** menu (start/stop, pause/resume, show/hide, minimize to menu bar, keep on top, lock, AI assistant, transcript, history). Most of the time you just use the subtitle window: hover over it to show the toolbar. Hovering a button highlights it and shows its name.
 
 | Button | What it does |
 |---|---|
-| ▶ / ⏸ | Start / stop |
+| ▶ | Start |
+| ⏸ / ▶ | Pause / resume. Subtitles, the transcript and the AI assistant conversation are kept |
+| ⏹ | Stop. The next start begins a new AI assistant conversation; the transcript continues until you start a new session |
 | 📌 | Keep subtitles above all windows (on by default). When off, other windows can cover them; click the subtitles to bring them back to the front |
 | 🎙 | Audio source: microphone, system audio, or both |
 | 📄 | This session's transcript: notes, SRT/WebVTT export, new session, and the **history** window |
 | ✨ | Show / hide the AI assistant |
 | ⚙︎ | Settings |
+| ⬆︎ | Minimize to the menu bar: the latest line (original and translation) is shown in the menu bar; click it to bring the subtitle window back |
 | ✕ | Quit |
 
 - **⌃⌥L** hides or shows the subtitles; opening ICT again from Spotlight also brings them back.
@@ -78,6 +82,7 @@ ICT has no menu bar or Dock icon; everything is on the subtitle window. Hover ov
 - **Scroll up** on the subtitles to read earlier lines; click "Back to Live" to return.
 - **Settings** has a sidebar (Translation, Audio, Subtitles, Transcripts, Advanced). Changes apply immediately so you can see the effect; click **Done** to keep them. If you close the window instead, ICT asks whether to keep them (Done) or restore what you had before (Cancel).
 - **Lock** (Settings › Subtitles) makes the subtitles ignore clicks. Hover and click the lock in the top-right corner to unlock.
+- **Language** (Settings › Advanced): System, 简体中文 or English. Click **Reopen** to apply it.
 
 ## Translators
 
@@ -112,6 +117,7 @@ Capture ─▶ Recognition ─▶ Segmentation ─▶ Translation ─▶ Display
 
 - **Segmentation** (`Sources/ICTCore/2-Segmentation`): complete sentences are sent immediately; short fragments ("Okay.", "Right?") are merged with their neighbours; long subtitles are split at commas. For run-on speech, `BreathCutter` detects a short dip in volume and `PartialCommitter` commits the words recognized so far, so the first half is translated without waiting for the speaker to stop.
 - **Recognition quality** (`Sources/ICTCore/1-Recognition`): the average word confidence decides when accent correction turns on (quickly) and off (only after a minute of clear speech).
+- **System audio** (`Pipeline/1-Capture`): a Core Audio process tap feeds a private aggregate device. The audio arrives at the output device's sample rate (44.1 kHz for most Bluetooth headphones, 16 kHz while something uses their microphone), so ICT reads the rate from the aggregate device and rebuilds the tap when it changes.
 - **Translation queue**: Google and Apple translate several sentences at once; language-model sessions go in order with conversation context. A backlog is merged into one request so the delay never keeps growing.
 
 ### Project layout
@@ -126,7 +132,7 @@ Sources/ICT/
     1-Capture/            microphone, system audio (Core Audio process tap), test audio files
     2-Recognition/        SpeechAnalyzer / SFSpeechRecognizer engines, recognition events
     4-Translation/        Google, Apple, Claude CLI and HTTP API translators, translation queue
-    5-Display/            floating subtitle window
+    5-Display/            floating subtitle window, menu bar mini subtitles
     6-Transcript/         transcript files, export, notes, transcript and history windows
   Assistant/              AI assistant session and panel
   Settings/               settings and model-services windows
@@ -142,6 +148,7 @@ swift build
 scripts/test.sh                          # unit tests (adds the macro plugin path the CLI toolchain needs)
 B=.build/debug/ICT
 $B --transcribe-file talk.aiff --realtime                # recognition + segmentation
+open -n --stdout out.txt build/ICT.app --args --transcribe-system 30   # recognize what the Mac is playing
 $B --translate "First sentence." "Second one." --engine google
 $B --export-test talk.aiff out.srt                       # whole pipeline, then export SRT
 $B --render-window out.png --hover                       # offscreen screenshot of the subtitle window

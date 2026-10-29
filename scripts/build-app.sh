@@ -1,7 +1,7 @@
 #!/bin/zsh
 # 构建 ICT.app（只需要 Xcode 命令行工具）。
 #   scripts/build-app.sh              构建到 build/ICT.app（本机芯片）
-#   scripts/build-app.sh --install    另外复制到 ~/Applications 并打开
+#   scripts/build-app.sh --install    另外替换“应用程序”文件夹（/Applications）里的 ICT 并打开
 #   scripts/build-app.sh --universal  构建 Apple 芯片和 Intel 通用的版本（发布用，见 scripts/package-release.sh）
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -27,6 +27,8 @@ cp "$(swift build -c release --product ICT "${ARCHS[@]}" --show-bin-path)/ICT" "
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 # 界面文字：中文、英文对照表与本地化的应用名称、权限说明。
 cp -R Resources/*.lproj "$APP/Contents/Resources/"
+# 程序坞、Finder 里的图标（scripts/make-icon.swift 生成）。
+cp Resources/AppIcon.icns "$APP/Contents/Resources/"
 date "+%Y-%m-%d %H:%M:%S" > "$APP/Contents/Resources/BuildInfo.txt"
 
 # 签名：有本机证书（scripts/make-signing-cert.sh 创建）就用它，签名身份固定，重新构建后不会再询问麦克风/录音权限；
@@ -41,9 +43,9 @@ fi
 echo "✅ 已生成 $APP"
 
 if (( INSTALL )); then
-  mkdir -p ~/Applications
-  rm -rf ~/Applications/ICT.app
-  cp -R "$APP" ~/Applications/
-  echo "✅ 已安装到 ~/Applications/ICT.app"
-  open ~/Applications/ICT.app
+  # 和下载安装的是同一个位置，免得有两份 ICT（Spotlight、程序坞可能打开旧的那份）。
+  rm -rf /Applications/ICT.app
+  ditto "$APP" /Applications/ICT.app
+  echo "✅ 已安装到 /Applications/ICT.app"
+  open /Applications/ICT.app
 fi

@@ -4,9 +4,9 @@ import SwiftUI
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
-    private let settings = AppSettings.shared
-    private lazy var controller = SubtitleController(settings: settings)
-    private var overlay: OverlayWindowController!
+    let settings = AppSettings.shared
+    lazy var controller = SubtitleController(settings: settings)
+    var overlay: OverlayWindowController!
     private var assistantWindow: AssistantWindowController!
     private var settingsWindow: NSWindow?
     /// 这次打开设置前的值；关窗口时有改动就问用户完成还是取消。
@@ -19,18 +19,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let settingsState = SettingsViewState()
     /// 已经自动弹过下载窗口的语言组合：用户取消后，这次运行里不再反复弹。
     private var promptedLanguagePairs: Set<String> = []
-    /// 没有菜单栏图标（2026-10-22 用户要求去掉）：所有操作都在字幕的快捷按钮和各个窗口里，
-    /// 收起的字幕用 ⌃⌥L 或再打开一次 App 叫回来。
+    /// 普通 App：程序坞里有图标，点它把收起的字幕叫回来；顶部有标准菜单（`AppMenus.swift`）。
+    /// 平时没有菜单栏右侧的状态图标（2026-10-22 用户要求去掉）；只在最小化到菜单栏时出现（`MenuBarTicker`）。
+    /// ⌃⌥L 收起/显示字幕。
     private var showHotKey: GlobalHotKey?
+    private lazy var ticker = MenuBarTicker(controller: controller) { [weak self] in self?.showSubtitles() }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.appearance = settings.appearance.nsAppearance
+        setUpMainMenu()
         BackgroundCursor.enable()
         // 提前读好终端里的登录环境变量，第一次翻译时不用等。
         DispatchQueue.global(qos: .utility).async { _ = ClaudeCLI.shellEnvironment() }
         overlay = OverlayWindowController(controller: controller, settings: settings, actions: OverlayActions(
             toggleRunning: { [weak self] in self?.controller.toggle() },
+            togglePause: { [weak self] in self?.controller.togglePause() },
             togglePin: { [weak self] in self?.togglePin() },
+            minimize: { [weak self] in self?.minimizeToMenuBar() },
             showHistory: { [weak self] in self?.showHistory() },
             showSettings: { [weak self] in self?.showSettings() },
             quit: { NSApp.terminate(nil) },
@@ -67,12 +72,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     // MARK: - 动作
 
-    private func toggleOverlay() {
+    func toggleOverlay() {
         overlay.isVisible ? hideSubtitles() : showSubtitles()
     }
 
+    /// 收起字幕窗口，在菜单栏上用两行小字继续显示最新的原文和译文。
+    func minimizeToMenuBar() {
+        hideSubtitles()
+        ticker.show()
+    }
+
     /// 字幕和（打开着的）AI 助手一起显示 / 收起。
-    private func showSubtitles() {
+    func showSubtitles() {
+        ticker.hide()
         overlay.show()
         if settings.assistantVisible { showAssistant() }
     }
@@ -88,7 +100,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         overlay.hide()
     }
 
-    private func toggleAssistant() {
+    func toggleAssistant() {
         settings.assistantVisible.toggle()
         if settings.assistantVisible, overlay.isVisible {
             showAssistant()
@@ -97,12 +109,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
-    private func togglePin() {
+    func togglePin() {
         settings.pinned.toggle()
         overlay.applyPin()
     }
 
-    private func showArchive() {
+    func showArchive() {
         if archiveWindow == nil {
             archiveWindow = makeWindow(title: L("ICT 历史记录"), view: ArchiveView(model: archiveModel))
             archiveWindow?.setContentSize(NSSize(width: 860, height: 600))
@@ -119,7 +131,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         showSubtitles()
     }
 
-    private func showSettings() {
+    func showSettings() {
         if settingsWindow == nil {
             let view = SettingsView(settings: settings, state: settingsState,
                                     onTranslationSettingsChanged: { [weak self] in self?.controller.settingsChanged() },
@@ -185,7 +197,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         present(modelServicesWindow!)
     }
 
-    private func showHistory() {
+    func showHistory() {
         if historyWindow == nil {
             historyWindow = makeWindow(title: L("ICT 字幕记录"), view: HistoryView(
                 controller: controller, onShowArchive: { [weak self] in self?.showArchive() }))

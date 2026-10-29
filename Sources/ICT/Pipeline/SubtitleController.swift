@@ -59,6 +59,8 @@ final class SourcePipeline {
 final class SubtitleController {
     private(set) var isRunning = false
     private(set) var isStarting = false
+    /// 暂停中：收音和识别停了，字幕、AI 助手对话、识别质量判断都留着，“继续”时接着用。
+    private(set) var isPaused = false
     var status = L("未开始")
     var lines: [SubtitleLine] = []
     /// 各音源正在说、还没分好句的文字（键是音源标签，只有一个音源时为空字符串）。
@@ -123,8 +125,10 @@ final class SubtitleController {
     /// 用户点“开始/停止”。开始时 AI 助手新开一个对话（设置变化引起的自动重启不会清空对话）。
     func toggle() {
         Task {
-            if isRunning {
+            if isRunning || isPaused {
                 await stop()
+                isPaused = false
+                status = L("已停止")
             } else {
                 assistant.newConversation()
                 if settings.assistantVisible { assistant.warmUp() }
@@ -214,6 +218,20 @@ final class SubtitleController {
         }
     }
 
+    /// 用户点“暂停/继续”。和“停止”不同，继续时不开新的 AI 助手对话，也不重新判断讲者好不好识别。
+    func togglePause() {
+        Task {
+            if isRunning {
+                await stop()
+                isPaused = true
+                status = L("已暂停")
+            } else if isPaused {
+                isPaused = false
+                await start()
+            }
+        }
+    }
+
     func stop() async {
         guard isRunning else { return }
         appLog.notice("stop")
@@ -238,6 +256,7 @@ final class SubtitleController {
     func newSession() {
         Task {
             await stop()
+            isPaused = false
             lines = []
             queue = []
             backlog = 0

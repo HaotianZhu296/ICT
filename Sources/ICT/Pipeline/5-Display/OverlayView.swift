@@ -5,7 +5,9 @@ import SwiftUI
 /// 悬浮字幕上的快捷按钮回调（由 AppDelegate 提供）。
 struct OverlayActions {
     var toggleRunning: () -> Void
+    var togglePause: () -> Void
     var togglePin: () -> Void
+    var minimize: () -> Void
     var showHistory: () -> Void
     var showSettings: () -> Void
     var quit: () -> Void
@@ -261,12 +263,18 @@ struct OverlayView: View {
     /// 一小行：有没有收到声音、识别是否清晰、翻译引擎、积压、最近的错误。
     private var statusBar: some View {
         HStack(spacing: 6) {
-            Image(systemName: hasInput ? "waveform" : "waveform.slash")
+            // 图标和文字都按最宽的情况占位：有没有声音、识别难不难切换时，后面的内容不左右跳。
+            ZStack {
+                Image(systemName: "waveform.slash").hidden()
+                Image(systemName: hasInput ? "waveform" : "waveform.slash")
+            }
             levelMeter
-            Text(soundText).foregroundStyle(hasInput ? palette.fg.opacity(0.6) : Color.orange)
+            fixedWidth(soundText, among: [L("无音频输入"), L("收音中"), L("无声音")])
+                .foregroundStyle(hasInput ? palette.fg.opacity(0.6) : Color.orange)
             separator
-            Text(controller.correcting ? L("识别较难 · 已自动纠正")
-                 : controller.recognitionDifficult ? L("识别较难") : L("识别清晰"))
+            fixedWidth(controller.correcting ? L("识别较难 · 已自动纠正")
+                       : controller.recognitionDifficult ? L("识别较难") : L("识别清晰"),
+                       among: [L("识别较难 · 已自动纠正"), L("识别较难"), L("识别清晰")])
                 .help(controller.correcting ? L("识别置信度较低，已自动按发音纠正识别错误。")
                       : controller.recognitionDifficult
                         ? (settings.autoCorrect ? L("识别置信度较低。自动纠正需要本机已登录 Claude Code。")
@@ -290,6 +298,14 @@ struct OverlayView: View {
         .padding(.top, 2)
         .padding(.bottom, 7)
         .frame(height: Self.statusBarHeight)
+    }
+
+    /// 显示 `text`，宽度取 `variants` 里最宽的那个。
+    private func fixedWidth(_ text: String, among variants: [String]) -> some View {
+        ZStack(alignment: .leading) {
+            ForEach(variants, id: \.self) { Text($0).hidden() }
+            Text(text)
+        }
     }
 
     /// 超过 3 秒没收到任何音频数据：采集断了（和“安静”不同）。
@@ -456,14 +472,14 @@ struct OverlayView: View {
 
     private var startButton: some View {
         VStack(spacing: 8) {
-            Button(action: actions.toggleRunning) {
+            Button(action: controller.isPaused ? actions.togglePause : actions.toggleRunning) {
                 HStack(spacing: 8) {
                     if controller.isStarting {
                         ProgressView().controlSize(.small)
                         Text("准备中…")
                     } else {
                         Image(systemName: "play.fill")
-                        Text("开始翻译")
+                        Text(controller.isPaused ? "继续" : "开始翻译")
                     }
                 }
                 .font(.system(size: 16, weight: .semibold))
@@ -568,7 +584,12 @@ struct OverlayView: View {
 
     private var toolbar: some View {
         HStack(spacing: 4) {
-            toolButton(controller.isRunning ? "pause.fill" : "play.fill", controller.isRunning ? "停止" : "开始", actions.toggleRunning)
+            if controller.isRunning || controller.isPaused {
+                toolButton(controller.isPaused ? "play.fill" : "pause.fill", controller.isPaused ? "继续" : "暂停", actions.togglePause)
+                toolButton("stop.fill", "停止", actions.toggleRunning)
+            } else {
+                toolButton("play.fill", "开始", actions.toggleRunning)
+            }
             toolButton(settings.pinned ? "pin.fill" : "pin.slash", settings.pinned ? "取消置顶" : "置顶字幕", actions.togglePin)
             audioSourceMenu
             // 字幕一直自动记录到记录文件夹，这里打开本次的字幕记录（笔记、导出、历史记录都在那个窗口里）。
@@ -576,6 +597,7 @@ struct OverlayView: View {
             toolButton("sparkles", settings.assistantVisible ? "隐藏 AI 助手" : "显示 AI 助手",
                        tint: settings.assistantVisible ? (scheme == .dark ? .yellow : .orange) : nil, actions.toggleAssistant)
             toolButton("gearshape", "设置", actions.showSettings)
+            toolButton("menubar.arrow.up.rectangle", "最小化到菜单栏", actions.minimize)
             toolButton("xmark", "退出 ICT", actions.quit)
         }
         .padding(4)
