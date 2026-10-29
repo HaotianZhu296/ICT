@@ -195,10 +195,6 @@ struct SettingsView: View {
                     ForEach(AudioSourceMode.allCases) { Text($0.shortTitle).tag($0) }
                 }
                 .pickerStyle(.segmented)
-                if settings.audioSource != .system {
-                    Toggle("麦克风降噪", isOn: $settings.micNoiseReduction)
-                        .help("使用系统语音处理降低环境噪音并消除回声。讲者距离较远时可能降低识别效果。")
-                }
                 if !settings.sourceLanguage.hasPrefix("zh") {
                     Toggle("过滤中文说话声", isOn: $settings.filterChinese)
                         .help("识别并忽略中文说话声，例如周围的交谈。")
@@ -323,7 +319,7 @@ struct SettingsView: View {
     private var translationKey: String {
         [settings.sourceLanguage, settings.targetLanguage, settings.audioSource.rawValue,
          settings.displayName(settings.translationModel), settings.claudePath,
-         String(settings.filterChinese), String(settings.micNoiseReduction),
+         String(settings.filterChinese),
          String(settings.autoCorrect)].joined(separator: "\u{1}")
     }
 

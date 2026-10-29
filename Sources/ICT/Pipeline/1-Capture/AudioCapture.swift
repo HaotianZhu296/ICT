@@ -31,14 +31,10 @@ final class MicrophoneCapture: AudioCapture {
     let label = L("麦克风")
     private let engine = AVAudioEngine()
     private var running = false
-    private let noiseReduction: Bool
 
-    /// - noiseReduction: 打开系统的语音处理（FaceTime 用的那套）：降噪、回声消除、自动增益。
-    ///   嘈杂环境、讲者离得远时可能更清楚；但它偏向“离麦克风近的人声”，远处的讲者也可能被压低，所以做成可选项。
-    ///   回声消除还能去掉扬声器外放被麦克风再录一遍的声音（“两者同时”模式下的重复字幕）。
-    init(noiseReduction: Bool = false) {
-        self.noiseReduction = noiseReduction
-    }
+    // 不要打开系统的语音处理（setVoiceProcessingEnabled，FaceTime 那套降噪、回声消除）：它只留离麦克风近的人声，
+    // 坐在教室里离老师远时老师的声音几乎被全部压掉（2026-10-29 用户反馈后删掉了“麦克风降噪”）；
+    // 它还会占住输出设备（见 SystemAudioCapture）。
 
     static func requestPermission() async -> Bool {
         await AVAudioApplication.requestRecordPermission()
@@ -46,14 +42,6 @@ final class MicrophoneCapture: AudioCapture {
 
     func start(onBuffer: @escaping (AVAudioPCMBuffer) -> Void) throws {
         let input = engine.inputNode
-        if noiseReduction {
-            try input.setVoiceProcessingEnabled(true)
-            input.isVoiceProcessingAGCEnabled = true
-            // 语音处理默认会把其他声音（视频、音乐）压低，这里尽量不压。
-            input.voiceProcessingOtherAudioDuckingConfiguration =
-                AVAudioVoiceProcessingOtherAudioDuckingConfiguration(enableAdvancedDucking: false, duckingLevel: .min)
-        }
-        // 打开语音处理后会给出多个声道（麦克风阵列）；后面转成单声道时取第一个，也就是处理后的人声。
         let format = input.outputFormat(forBus: 0)
         guard format.sampleRate > 0, format.channelCount > 0 else { throw CaptureError.noInput }
         input.installTap(onBus: 0, bufferSize: 4096, format: format) { buffer, _ in

@@ -172,7 +172,7 @@ final class SubtitleController {
         if let testFile = ProcessInfo.processInfo.environment["ICT_TEST_AUDIO_FILE"] {
             captures.append(FileCapture(url: URL(fileURLWithPath: testFile)))
         } else {
-            if mode != .system { captures.append(MicrophoneCapture(noiseReduction: settings.micNoiseReduction)) }
+            if mode != .system { captures.append(MicrophoneCapture()) }
             if mode != .microphone { captures.append(SystemAudioCapture()) }
         }
 
@@ -292,7 +292,7 @@ final class SubtitleController {
     }
 
     var recognitionKey: String {
-        [settings.sourceLanguage, settings.audioSource.rawValue, settings.guardLocale ?? "", String(settings.micNoiseReduction)]
+        [settings.sourceLanguage, settings.audioSource.rawValue, settings.guardLocale ?? ""]
             .joined(separator: "\u{1}")
     }
 

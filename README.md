@@ -161,7 +161,7 @@ $B --render-window out.png --hover                       # offscreen screenshot 
 - Builds are signed with a local certificate, not notarized by Apple.
 - The Intel build compiles but hasn't been run on an Intel Mac.
 - On macOS 14.2–15 recognition is less accurate and subtitle timestamps are estimated.
-- With "both" audio sources and speakers (not headphones), the microphone can pick up the system audio again and produce duplicate lines. Microphone noise reduction (echo cancellation) helps.
+- With "both" audio sources and speakers (not headphones), the microphone can pick up the system audio again and produce duplicate lines. Wearing headphones avoids this.
 
 ## Acknowledgments
 

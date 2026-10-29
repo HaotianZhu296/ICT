@@ -25,7 +25,6 @@
 "云端模型" = "Cloud Models";
 "仅原文" = "Original Only";
 "仅译文" = "Translation Only";
-"使用系统语音处理降低环境噪音并消除回声。讲者距离较远时可能降低识别效果。" = "Uses system voice processing to reduce background noise and remove echo. Accuracy may drop when the speaker is far away.";
 "停止" = "Stop";
 "准备中…" = "Preparing…";
 "切换翻译模型" = "Change Translation Model";
@@ -157,7 +156,6 @@
 "音源" = "Audio Source";
 "麦克风" = "Microphone";
 "麦克风和系统音频" = "Microphone and System Audio";
-"麦克风降噪" = "Microphone Noise Reduction";
 "未知错误" = "Unknown error";
 "隐藏 AI 助手" = "Hide AI Assistant";
 "显示 AI 助手" = "Show AI Assistant";

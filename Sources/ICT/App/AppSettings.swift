@@ -137,8 +137,6 @@ final class AppSettings {
     var claudePath: String { didSet { save("claudePath", claudePath) } }
     /// 并行跑一个中文识别器，过滤掉旁边的中文说话声（讲话语言不是中文时才有效）。
     var filterChinese: Bool { didSet { save("filterChinese", filterChinese) } }
-    /// 麦克风降噪（系统语音处理：降噪、回声消除、自动增益）。
-    var micNoiseReduction: Bool { didSet { save("micNoiseReduction", micNoiseReduction) } }
     /// 字幕底部的运行状态条（有没有声音、识别是否清晰、翻译积压）。
     var showStatusBar: Bool { didSet { save("showStatusBar", showStatusBar) } }
     /// 识别困难（口音重、语速快、噪音大）时让大模型按发音和上下文纠正识别错误。默认打开（2026-10-22 用户要求）。
@@ -192,7 +190,8 @@ final class AppSettings {
         autoCorrect = d.object(forKey: "autoCorrect") as? Bool ?? true
         keepOriginalText = d.object(forKey: "keepOriginalText") as? Bool ?? false
         showStatusBar = d.object(forKey: "showStatusBar") as? Bool ?? true
-        micNoiseReduction = d.object(forKey: "micNoiseReduction") as? Bool ?? false
+        // “麦克风降噪”已删除（会把远处讲者的声音压掉）：清掉以前存的设置。
+        d.removeObject(forKey: "micNoiseReduction")
         assistantWidth = d.object(forKey: "assistantWidth") as? Double ?? 380
         assistantHeight = d.object(forKey: "assistantHeight") as? Double ?? 420
         displayMode = DisplayMode(rawValue: d.string(forKey: "displayMode") ?? "") ?? .bilingual
@@ -259,7 +258,7 @@ final class AppSettings {
         var audioSource: AudioSourceMode
         var translationModel: ModelChoice
         var claudePath: String
-        var filterChinese, micNoiseReduction, showStatusBar, autoCorrect, keepOriginalText: Bool
+        var filterChinese, showStatusBar, autoCorrect, keepOriginalText: Bool
         var displayMode: DisplayMode
         var appearance: AppearanceMode
         var translationFontSize, sourceFontSize, backgroundOpacity: Double
@@ -271,7 +270,7 @@ final class AppSettings {
     var snapshot: Snapshot {
         Snapshot(sourceLanguage: sourceLanguage, targetLanguage: targetLanguage, audioSource: audioSource,
                  translationModel: translationModel, claudePath: claudePath, filterChinese: filterChinese,
-                 micNoiseReduction: micNoiseReduction, showStatusBar: showStatusBar, autoCorrect: autoCorrect,
+                 showStatusBar: showStatusBar, autoCorrect: autoCorrect,
                  keepOriginalText: keepOriginalText, displayMode: displayMode, appearance: appearance,
                  translationFontSize: translationFontSize, sourceFontSize: sourceFontSize,
                  backgroundOpacity: backgroundOpacity, visibleLines: visibleLines, clickThrough: clickThrough,
@@ -285,7 +284,6 @@ final class AppSettings {
         translationModel = s.translationModel
         claudePath = s.claudePath
         filterChinese = s.filterChinese
-        micNoiseReduction = s.micNoiseReduction
         showStatusBar = s.showStatusBar
         autoCorrect = s.autoCorrect
         keepOriginalText = s.keepOriginalText

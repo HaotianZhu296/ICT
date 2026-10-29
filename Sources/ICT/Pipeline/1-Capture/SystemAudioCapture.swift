@@ -39,8 +39,8 @@ final class SystemAudioCapture: AudioCapture {
         try check(AudioHardwareCreateProcessTap(description, &tap), "创建系统音频采集")
         tapID = tap
 
-        // 聚合设备里只放 tap，不挂输出设备：麦克风打开系统语音处理（“麦克风降噪”）时会占住输出设备做回声消除，
-        // 挂着输出设备的聚合设备随之停摆，一帧音频都收不到（2026-10-29 实测，“两者”模式下系统声音没有字幕）。
+        // 聚合设备里只放 tap，不挂输出设备：有程序打开系统语音处理（视频会议软件的回声消除，ICT 以前的“麦克风降噪”）时
+        // 会占住输出设备，挂着输出设备的聚合设备随之停摆，一帧音频都收不到（2026-10-29 实测）。
         let aggregate: [String: Any] = [
             kAudioAggregateDeviceNameKey: "ICT Tap",
             kAudioAggregateDeviceUIDKey: UUID().uuidString,
